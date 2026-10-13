@@ -1,7 +1,7 @@
 (() => {
   const $ = (s) => document.querySelector(s);
   const grid = $('#jobGrid'); if (!grid) return;
-  const search = $('#searchInput'), category = $('#categoryFilter'), type = $('#typeFilter');
+  const search = $('#searchInput'), category = $('#categoryFilter'), type = $('#typeFilter'), dateFilter = $('#dateFilter');
   const dialog = $('#jobDialog'), dialogContent = $('#dialogContent');
   let jobs = [];
 
@@ -12,6 +12,36 @@
     return Number.isNaN(dt.getTime()) ? d : new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric'}).format(dt);
   };
   const posterClass = (i) => `poster-${(i % 4)+1}`;
+
+  function matchesDateFilter(publishedAt, filterVal) {
+    if (!filterVal) return true;
+    if (!publishedAt) return false;
+
+    const parts = publishedAt.split('T')[0].split('-').map(Number);
+    if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+      return true;
+    }
+
+    const pubDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffDays = Math.round((todayMidnight.getTime() - pubDate.getTime()) / (24 * 60 * 60 * 1000));
+    const effectiveDays = Math.max(0, diffDays);
+
+    switch (filterVal) {
+      case '24h':
+        return effectiveDays <= 1;
+      case '7d':
+        return effectiveDays <= 7;
+      case '14d':
+        return effectiveDays <= 14;
+      case '30d':
+        return effectiveDays <= 30;
+      default:
+        return true;
+    }
+  }
 
   function posterMarkup(job, i, large=false) {
     if(job.poster && /^https?:\/\//i.test(job.poster)) {
@@ -50,13 +80,20 @@
   }
 
   function render() {
-    const q = search.value.trim().toLowerCase(), cat = category.value, typ = type.value;
-    const hasFilter = Boolean(q || cat || typ);
+    const q = search.value.trim().toLowerCase(),
+          cat = category.value,
+          typ = type.value,
+          dtVal = dateFilter ? dateFilter.value : '';
+    const hasFilter = Boolean(q || cat || typ || dtVal);
 
     const filtered = jobs.filter(j => {
       const hay = [j.title, j.company, j.location, j.category, j.caption, j.description].join(' ').toLowerCase();
       const closed = j.status === 'closed' || (j.deadline && new Date(`${jobDeadline(j)}`) < new Date());
-      return (!q || hay.includes(q)) && (!cat || j.category === cat) && (!typ || j.jobType === typ) && !closed;
+      return (!q || hay.includes(q)) &&
+             (!cat || j.category === cat) &&
+             (!typ || j.jobType === typ) &&
+             matchesDateFilter(j.publishedAt, dtVal) &&
+             !closed;
     });
 
     function jobDeadline(j) {
@@ -269,12 +306,16 @@
       render();
     });
 
-  [search, category, type].forEach(el => el.addEventListener('input', render));
+  [search, category, type, dateFilter].filter(Boolean).forEach(el => {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
 
   function reset() {
     search.value = '';
     category.value = '';
     type.value = '';
+    if (dateFilter) dateFilter.value = '';
     render();
   }
 
