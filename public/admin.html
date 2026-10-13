@@ -1,1 +1,188 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Editor Konten — Indo-Talent</title><meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="assets/css/styles.css"><link rel="stylesheet" href="assets/css/admin.css"><script defer src="assets/js/admin.js"></script></head><body class="admin-body"><header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">IT</span><span>indo<span class="brand-accent">talent</span><small>EDITOR KONTEN</small></span></a><nav><a href="index.html">Lihat website ↗</a></nav></header><main class="admin-main"><div class="eyebrow dark-eyebrow">EDITOR DATA LOWONGAN</div><h1>Kelola informasi lowongan.</h1><p class="admin-intro">Edit data dalam browser, lalu ekspor sebagai <code>jobs.json</code>. Ini editor lokal, bukan admin online dengan autentikasi. File yang diekspor perlu menggantikan <code>public/jobs.json</code> di repository dan di-deploy ulang.</p><div class="admin-actions"><label class="button-outline file-label">Impor jobs.json<input id="importFile" type="file" accept="application/json,.json" hidden></label><button id="newJob" class="button-dark" type="button">+ Tambah lowongan</button><button id="exportJobs" class="button-green" type="button">Unduh jobs.json ↓</button></div><div id="adminMessage" role="status" class="admin-message"></div><div class="admin-layout"><form id="jobForm" class="admin-form"><h2 id="formTitle">Tambah lowongan</h2><input type="hidden" id="jobId"><label>Judul posisi<input id="title" required maxlength="140"></label><label>Nama perusahaan<input id="company" required maxlength="140"></label><div class="form-row"><label>Lokasi<input id="location" required></label><label>Kategori<input id="category" required placeholder="Mining, IT, ..."></label></div><div class="form-row"><label>Tipe kerja<input id="jobType" placeholder="Full-time, Contract"></label><label>Status<select id="status"><option value="active">Aktif</option><option value="closed">Ditutup</option></select></label></div><label>URL poster<input id="poster" type="url" placeholder="https://... (opsional)"></label><label>Caption singkat<textarea id="caption" rows="3" required></textarea></label><label>Deskripsi & kualifikasi<textarea id="description" rows="6" required></textarea></label><label>URL pendaftaran resmi<input id="applicationUrl" type="url" placeholder="https://... (kosong jika tidak ada)"></label><label>Email pendaftaran<input id="applicationEmail" type="email" placeholder="hr@example.com (kosong jika tidak ada)"></label><div class="form-row"><label>Batas lamaran<input id="deadline" type="date"></label><label>Tanggal publikasi<input id="publishedAt" type="date" required></label></div><label>Sumber informasi (URL)<input id="sourceUrl" type="url" placeholder="https://halaman-pengumuman-resmi... (opsional)"></label><div class="form-actions"><button class="button-green" type="submit">Simpan ke daftar</button><button class="button-outline" id="clearForm" type="button">Kosongkan form</button></div></form><section class="admin-list-panel"><div class="list-heading"><h2>Daftar lowongan</h2><span id="jobTotal">0 item</span></div><div id="adminJobList" class="admin-job-list"></div></section></div><p class="admin-warning"><strong>Catatan keamanan:</strong> halaman ini tidak dilindungi login dan tidak menyimpan perubahan ke server. Jangan mengandalkan halaman ini sebagai admin produksi atau memasukkan data pribadi. Untuk admin multi-pengguna, diperlukan backend terautentikasi.</p></main></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Panel — Indo-Talent</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+  <script defer src="assets/js/admin.js"></script>
+</head>
+<body class="admin-body">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">IT</span>
+      <span>indo<span class="brand-accent">talent</span><small>PANEL ADMIN</small></span>
+    </a>
+    <nav>
+      <a href="index.html">Lihat website ↗</a>
+      <div id="navAdminInfo" style="display:none; align-items:center; gap:12px;">
+        <span id="navAdminEmail" class="nav-admin-badge">admin</span>
+        <button id="logoutBtn" class="nav-logout-btn" type="button">Keluar</button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="admin-main">
+    <!-- VIEW 1: LOGIN SECTION (Shown when not authenticated) -->
+    <section id="loginSection" class="login-container">
+      <div class="login-card">
+        <div class="eyebrow dark-eyebrow">AKSES TERBATAS</div>
+        <h1>Masuk Admin</h1>
+        <p class="login-desc">Masukkan alamat email dan kata sandi untuk mengelola data lowongan kerja di Indo-Talent.</p>
+
+        <form id="loginForm" class="login-form">
+          <label>
+            Email Administrator
+            <input id="loginEmail" type="email" required autocomplete="username" placeholder="admin.ptsui@gmail.com" autofocus>
+          </label>
+          <label>
+            Kata Sandi
+            <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="••••••••">
+          </label>
+
+          <div id="loginError" role="alert" class="login-error-msg" hidden></div>
+
+          <button id="loginSubmit" class="button-dark login-btn" type="submit">
+            Masuk ke Panel <span>→</span>
+          </button>
+        </form>
+
+        <div class="login-hint-box">
+          <div class="hint-title">Kredensial Default:</div>
+          <div class="hint-row"><span>Email:</span> <code>admin.ptsui@gmail.com</code></div>
+          <div class="hint-row"><span>Kata Sandi:</span> <code>admin123</code></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: ADMIN MANAGEMENT DASHBOARD (Shown when authenticated) -->
+    <section id="dashboardSection" style="display:none;">
+      <div class="admin-header-row">
+        <div>
+          <div class="eyebrow dark-eyebrow">PANEL PENGELOLAAN LOWONGAN</div>
+          <h1>Kelola Lowongan Kerja</h1>
+          <p class="admin-intro">
+            Tambah lowongan baru atau hapus lowongan yang sudah kadaluarsa. Perubahan akan langsung disimpan ke server dan tampil di halaman depan website secara instan.
+          </p>
+        </div>
+        <div class="admin-user-summary">
+          <div class="user-chip">
+            <span class="pulse"></span>
+            <span id="displayAdminEmail">admin</span>
+          </div>
+          <button id="dashboardLogoutBtn" class="button-outline small-btn" type="button">Keluar</button>
+        </div>
+      </div>
+
+      <div class="admin-actions">
+        <button id="newJob" class="button-dark" type="button">+ Tambah Lowongan Baru</button>
+        <button id="exportJobs" class="button-outline" type="button">Unduh Backup JSON ↓</button>
+      </div>
+
+      <div id="adminMessage" role="status" class="admin-message"></div>
+
+      <div class="admin-layout">
+        <!-- FORM PANEL -->
+        <form id="jobForm" class="admin-form">
+          <h2 id="formTitle">Tambah Lowongan</h2>
+          <input type="hidden" id="jobId">
+
+          <label>
+            Judul Posisi *
+            <input id="title" required maxlength="140" placeholder="contoh: Site Engineer, Finance Staff">
+          </label>
+
+          <label>
+            Nama Perusahaan *
+            <input id="company" required maxlength="140" placeholder="contoh: PT Petro Industri Indonesia">
+          </label>
+
+          <div class="form-row">
+            <label>
+              Lokasi Penempatan *
+              <input id="location" required placeholder="contoh: Jakarta, Balikpapan, Remote">
+            </label>
+            <label>
+              Kategori / Bidang *
+              <input id="category" required placeholder="contoh: Pertambangan, IT & Digital, HR">
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Tipe Kerja
+              <input id="jobType" placeholder="Full-time, Contract, Magang">
+            </label>
+            <label>
+              Status Lowongan
+              <select id="status">
+                <option value="active">Aktif (Ditampilkan)</option>
+                <option value="closed">Ditutup</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            URL Gambar / Poster (Opsional)
+            <input id="poster" type="url" placeholder="https://... (biarkan kosong untuk tema poster otomatis)">
+          </label>
+
+          <label>
+            Ringkasan Singkat (Caption) *
+            <textarea id="caption" rows="3" required placeholder="Ringkasan 1-2 kalimat mengenai posisi ini..."></textarea>
+          </label>
+
+          <label>
+            Deskripsi Pekerjaan & Persyaratan *
+            <textarea id="description" rows="7" required placeholder="Tuliskan tanggung jawab, kualifikasi, pengalaman, dan berkas yang diperlukan..."></textarea>
+          </label>
+
+          <label>
+            URL Pendaftaran Resmi (Portal Rekrutmen)
+            <input id="applicationUrl" type="url" placeholder="https://careers.perusahaan.com/apply/...">
+          </label>
+
+          <label>
+            Email Pendaftaran (Jika lamaran via email)
+            <input id="applicationEmail" type="email" placeholder="rekrutmen@perusahaan.com">
+          </label>
+
+          <div class="form-row">
+            <label>
+              Batas Lamaran (Deadline)
+              <input id="deadline" type="date">
+            </label>
+            <label>
+              Tanggal Publikasi *
+              <input id="publishedAt" type="date" required>
+            </label>
+          </div>
+
+          <label>
+            Tautan Sumber Informasi Resmi
+            <input id="sourceUrl" type="url" placeholder="https://linkedin.com/... atau halaman resmi pengumuman">
+          </label>
+
+          <div class="form-actions">
+            <button id="saveJobBtn" class="button-green" type="submit">Simpan Lowongan ke Server</button>
+            <button class="button-outline" id="clearForm" type="button">Reset Form</button>
+          </div>
+        </form>
+
+        <!-- LIST PANEL -->
+        <section class="admin-list-panel">
+          <div class="list-heading">
+            <h2>Daftar Lowongan Aktif</h2>
+            <span id="jobTotal" class="job-counter-pill">0 item</span>
+          </div>
+          <div id="adminJobList" class="admin-job-list">
+            <div class="admin-loading-jobs">Memuat data lowongan...</div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
