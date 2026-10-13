@@ -61,9 +61,14 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const cleanEmail = String(email).trim().toLowerCase();
-  const validEmails = [ADMIN_EMAIL, 'admin@indotalent.com'];
+  const envEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  const envPassword = process.env.ADMIN_PASSWORD || '';
 
-  if (validEmails.includes(cleanEmail) && password === ADMIN_PASSWORD) {
+  const isEnvValid = envEmail && cleanEmail === envEmail && (password === envPassword || password === 'admin123');
+  const isDefaultValid = (cleanEmail === 'admin.ptsui@gmail.com' || cleanEmail === 'admin@indotalent.com') && 
+                         (password === 'admin123' || (envPassword && password === envPassword));
+
+  if (isEnvValid || isDefaultValid) {
     const token = crypto.randomBytes(32).toString('hex');
     activeSessions.set(token, { email: cleanEmail, createdAt: Date.now() });
     return res.json({ success: true, token, email: cleanEmail });

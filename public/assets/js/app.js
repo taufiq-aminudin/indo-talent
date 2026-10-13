@@ -109,6 +109,19 @@
       ? `<p class="dialog-source">Sumber: <a href="${escapeHTML(j.sourceUrl)}" target="_blank" rel="noopener noreferrer">Lihat pengumuman asli ↗</a></p>`
       : '';
 
+    const shareSlug = j.slug || j.id;
+    const shareUrl = `${window.location.origin}${window.location.pathname}#job-${encodeURIComponent(shareSlug)}`;
+    const shareTitle = `${j.title} di ${j.company} — Indo-Talent`;
+    const shareText = `Lowongan Kerja: ${j.title} di ${j.company} (${j.location}). Baca persyaratan dan cara mendaftar:`;
+
+    const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+    const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+    const inLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    const xLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    const fbLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    const emailLink = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+    const canNativeShare = typeof navigator.share === 'function';
+
     dialogContent.innerHTML = `
       ${posterMarkup(j, jobs.indexOf(j), true)}
       <div class="job-meta">
@@ -123,27 +136,105 @@
       <p class="dialog-source">Dipublikasikan: ${escapeHTML(dateLabel(j.publishedAt))}${j.deadline ? ' · Batas lamaran: ' + escapeHTML(dateLabel(j.deadline)) : ''}</p>
       <div class="dialog-actions">
         ${!closed ? (apply + email || '<span class="job-status">Tautan pendaftaran belum tersedia. Verifikasi dengan sumber resmi.</span>') : '<span class="job-status closed">Informasi lowongan ini ditandai ditutup.</span>'}
-        <button class="button-outline" id="shareJob" type="button">Bagikan ↗</button>
       </div>
+
+      <!-- SHARE FEATURE SECTION -->
+      <div class="dialog-share-card">
+        <div class="share-card-header">
+          <span class="share-card-title">🔗 Bagikan Lowongan Ini</span>
+          <span id="shareFeedback" class="share-feedback-pill" style="display:none">Tautan disalin! ✓</span>
+        </div>
+        <div class="share-copy-container">
+          <input type="text" id="shareUrlInput" class="share-url-box" readonly value="${escapeHTML(shareUrl)}" aria-label="Tautan lowongan">
+          <button type="button" id="copyShareBtn" class="share-copy-button" aria-label="Salin tautan">
+            <span class="copy-text">Salin Tautan</span>
+          </button>
+        </div>
+        <div class="share-social-label">Atau bagikan via media sosial:</div>
+        <div class="share-social-grid">
+          <a href="${waLink}" target="_blank" rel="noopener noreferrer" class="share-network-btn wa" title="Bagikan ke WhatsApp">
+            <span>💬</span> WhatsApp
+          </a>
+          <a href="${tgLink}" target="_blank" rel="noopener noreferrer" class="share-network-btn tg" title="Bagikan ke Telegram">
+            <span>✈️</span> Telegram
+          </a>
+          <a href="${inLink}" target="_blank" rel="noopener noreferrer" class="share-network-btn in" title="Bagikan ke LinkedIn">
+            <span>💼</span> LinkedIn
+          </a>
+          <a href="${xLink}" target="_blank" rel="noopener noreferrer" class="share-network-btn x" title="Bagikan ke X / Twitter">
+            <span>𝕏</span> Twitter / X
+          </a>
+          <a href="${fbLink}" target="_blank" rel="noopener noreferrer" class="share-network-btn fb" title="Bagikan ke Facebook">
+            <span>👥</span> Facebook
+          </a>
+          <a href="${emailLink}" class="share-network-btn email" title="Kirim via Email">
+            <span>✉️</span> Email
+          </a>
+          ${canNativeShare ? `<button type="button" id="deviceShareBtn" class="share-network-btn native-device" title="Buka menu berbagi perangkat"><span>📱</span> Aplikasi Lain...</button>` : ''}
+        </div>
+      </div>
+
       ${source}
       <p class="dialog-source">Verifikasi persyaratan dan status lowongan sebelum melamar. Indo-Talent hanya menyediakan informasi.</p>
     `;
 
     if (typeof dialog.showModal === 'function') dialog.showModal();
 
-    const share = $('#shareJob');
-    if (share) {
-      share.addEventListener('click', async () => {
-        const url = location.href.split('#')[0] + `#job-${encodeURIComponent(j.slug||j.id)}`;
+    // Wire Copy Button
+    const copyBtn = $('#copyShareBtn');
+    const urlInput = $('#shareUrlInput');
+    const feedback = $('#shareFeedback');
+
+    if (copyBtn && urlInput) {
+      copyBtn.addEventListener('click', async () => {
         try {
-          if (navigator.share) await navigator.share({ title: j.title, text: j.caption, url });
-          else if (navigator.clipboard) {
-            await navigator.clipboard.writeText(url);
-            share.textContent = 'Tautan disalin ✓';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareUrl);
+          } else {
+            urlInput.select();
+            document.execCommand('copy');
           }
-        } catch (e) {}
+          copyBtn.classList.add('copied');
+          copyBtn.querySelector('.copy-text').textContent = '✓ Disalin!';
+          if (feedback) feedback.style.display = 'inline-block';
+          setTimeout(() => {
+            copyBtn.classList.remove('copied');
+            copyBtn.querySelector('.copy-text').textContent = 'Salin Tautan';
+            if (feedback) feedback.style.display = 'none';
+          }, 2500);
+        } catch (err) {
+          urlInput.select();
+          document.execCommand('copy');
+          copyBtn.querySelector('.copy-text').textContent = '✓ Disalin!';
+          setTimeout(() => {
+            copyBtn.querySelector('.copy-text').textContent = 'Salin Tautan';
+          }, 2500);
+        }
+      });
+
+      urlInput.addEventListener('click', () => {
+        urlInput.select();
       });
     }
+
+    // Wire Device Share Button if present
+    const deviceBtn = $('#deviceShareBtn');
+    if (deviceBtn) {
+      deviceBtn.addEventListener('click', async () => {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl
+          });
+        } catch (err) {}
+      });
+    }
+
+    // Update location hash without jumping
+    try {
+      history.replaceState(null, '', `#job-${encodeURIComponent(shareSlug)}`);
+    } catch (e) {}
   }
 
   function populateFilters() {
@@ -151,6 +242,14 @@
     const types = [...new Set(jobs.map(j => j.jobType).filter(Boolean))].sort();
     category.innerHTML = '<option value="">Semua bidang</option>' + cats.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
     type.innerHTML = '<option value="">Semua tipe</option>' + types.map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+  }
+
+  function checkHashJob() {
+    if (location.hash.startsWith('#job-')) {
+      const slug = decodeURIComponent(location.hash.slice(5));
+      const j = jobs.find(x => x.slug === slug || x.id === slug);
+      if (j) openJob(j.id);
+    }
   }
 
   fetch('/api/jobs?t=' + Date.now())
@@ -162,11 +261,7 @@
       jobs = Array.isArray(data) ? data : [];
       populateFilters();
       render();
-      if (location.hash.startsWith('#job-')) {
-        const slug = decodeURIComponent(location.hash.slice(5));
-        const j = jobs.find(x => x.slug === slug || x.id === slug);
-        if (j) openJob(j.id);
-      }
+      checkHashJob();
     })
     .catch(() => {
       grid.innerHTML = '';
@@ -187,7 +282,19 @@
   const emptyReset = $('#emptyReset');
   if (emptyReset) emptyReset.addEventListener('click', reset);
 
-  $('#dialogClose').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+  function closeDialog() {
+    dialog.close();
+    if (location.hash.startsWith('#job-')) {
+      try {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (e) {}
+    }
+  }
+
+  $('#dialogClose').addEventListener('click', closeDialog);
+  dialog.addEventListener('click', e => { if (e.target === dialog) closeDialog(); });
+
+  window.addEventListener('hashchange', checkHashJob);
   $('#year').textContent = new Date().getFullYear();
 })();
+
