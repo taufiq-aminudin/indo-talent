@@ -87,8 +87,8 @@
 
   async function handleLogin(e) {
     e.preventDefault();
-    const email = $('#loginEmail').value.trim();
-    const password = $('#loginPassword').value;
+    const email = ($('#loginEmail').value || '').trim();
+    const password = ($('#loginPassword').value || '').trim();
     const errEl = $('#loginError');
     const submitBtn = $('#loginSubmit');
 
@@ -321,6 +321,29 @@
   $('#loginForm').addEventListener('submit', handleLogin);
   $('#logoutBtn').addEventListener('click', handleLogout);
   $('#dashboardLogoutBtn').addEventListener('click', handleLogout);
+
+  const togglePass = $('#togglePasswordBtn');
+  if (togglePass) {
+    togglePass.addEventListener('click', () => {
+      const passInput = $('#loginPassword');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        togglePass.textContent = '🙈 Sembunyikan';
+      } else {
+        passInput.type = 'password';
+        togglePass.textContent = '👁️ Tampilkan';
+      }
+    });
+  }
+
+  const autoFillBtn = $('#autoFillCreds');
+  if (autoFillBtn) {
+    autoFillBtn.addEventListener('click', () => {
+      $('#loginEmail').value = 'admin.ptsui@gmail.com';
+      $('#loginPassword').value = 'admin123';
+      $('#loginSubmit').focus();
+    });
+  }
 
   $('#jobForm').addEventListener('submit', saveJob);
   $('#clearForm').addEventListener('click', clearForm);

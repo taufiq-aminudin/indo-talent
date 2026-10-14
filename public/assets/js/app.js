@@ -114,7 +114,7 @@
 
         if (jobs.length === 0) {
           if (emptyTitle) emptyTitle.textContent = 'Belum ada lowongan yang tersedia';
-          if (emptyDesc) emptyDesc.innerHTML = 'Saat ini belum ada lowongan kerja aktif.<br><a href="admin.html" style="color:#1c5947;font-weight:700;text-decoration:underline;">Masuk ke Panel Admin</a> untuk menambahkan lowongan baru.';
+          if (emptyDesc) emptyDesc.textContent = 'Saat ini belum ada lowongan kerja aktif yang dipublikasikan. Silakan periksa kembali di lain waktu.';
           if (emptyResetBtn) emptyResetBtn.style.display = 'none';
         } else {
           if (emptyTitle) emptyTitle.textContent = 'Belum ada lowongan yang cocok';

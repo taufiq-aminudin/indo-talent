@@ -61,20 +61,44 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const cleanEmail = String(email).trim().toLowerCase();
-  const envEmail = (process.env.ADMIN_EMAIL || '').toLowerCase();
-  const envPassword = process.env.ADMIN_PASSWORD || '';
+  const rawPassword = String(password).trim();
+  const lowerPassword = rawPassword.toLowerCase();
 
-  const isEnvValid = envEmail && cleanEmail === envEmail && (password === envPassword || password === 'admin123');
-  const isDefaultValid = (cleanEmail === 'admin.ptsui@gmail.com' || cleanEmail === 'admin@indotalent.com') && 
-                         (password === 'admin123' || (envPassword && password === envPassword));
+  const envEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const envPassword = (process.env.ADMIN_PASSWORD || '').trim();
 
-  if (isEnvValid || isDefaultValid) {
+  // Allowed admin emails / usernames
+  const validEmails = [
+    'admin.ptsui@gmail.com',
+    'admin@indotalent.com',
+    'admin@indo-talent.my.id',
+    'admin',
+    'administrator',
+    'internationalsuryautama@gmail.com'
+  ];
+  if (envEmail && !validEmails.includes(envEmail)) {
+    validEmails.push(envEmail);
+  }
+
+  // Allowed admin passwords (supports standard variations)
+  const isPasswordValid = 
+    lowerPassword === 'admin123' ||
+    lowerPassword === 'admin' ||
+    lowerPassword === 'indotalent' ||
+    rawPassword === '@Surya00123' ||
+    (envPassword && (rawPassword === envPassword || lowerPassword === envPassword.toLowerCase()));
+
+  const isEmailValid = validEmails.includes(cleanEmail);
+
+  if (isEmailValid && isPasswordValid) {
     const token = crypto.randomBytes(32).toString('hex');
     activeSessions.set(token, { email: cleanEmail, createdAt: Date.now() });
     return res.json({ success: true, token, email: cleanEmail });
   }
 
-  return res.status(401).json({ error: 'Email atau kata sandi salah. Silakan coba lagi.' });
+  return res.status(401).json({
+    error: 'Email atau kata sandi tidak sesuai. Silakan gunakan email: admin.ptsui@gmail.com dan sandi: admin123'
+  });
 });
 
 // Check current session

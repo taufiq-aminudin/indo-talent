@@ -35,11 +35,14 @@
         <form id="loginForm" class="login-form">
           <label>
             Email Administrator
-            <input id="loginEmail" type="email" required autocomplete="username" placeholder="admin.ptsui@gmail.com" autofocus>
+            <input id="loginEmail" type="text" required autocomplete="username" value="admin.ptsui@gmail.com" placeholder="admin.ptsui@gmail.com" autofocus>
           </label>
           <label>
-            Kata Sandi
-            <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="••••••••">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Kata Sandi</span>
+              <button type="button" id="togglePasswordBtn" style="background:none;border:0;color:#275638;font-size:11px;cursor:pointer;font-weight:700;">👁️ Tampilkan</button>
+            </div>
+            <input id="loginPassword" type="password" required autocomplete="current-password" value="admin123" placeholder="admin123">
           </label>
 
           <div id="loginError" role="alert" class="login-error-msg" hidden></div>
@@ -53,6 +56,9 @@
           <div class="hint-title">Kredensial Administrator:</div>
           <div class="hint-row"><span>Email:</span> <code>admin.ptsui@gmail.com</code></div>
           <div class="hint-row"><span>Kata Sandi:</span> <code>admin123</code></div>
+          <button type="button" id="autoFillCreds" class="button-outline" style="width:100%;margin-top:10px;font-size:11px;padding:8px;cursor:pointer;">
+            ✓ Isi Kredensial Otomatis
+          </button>
         </div>
       </div>
     </section>
