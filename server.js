@@ -155,6 +155,15 @@ app.delete('/api/admin/jobs/:id', requireAuth, async (req, res) => {
   res.json({ success: true, message: 'Lowongan berhasil dihapus.', jobs: updatedJobs });
 });
 
+// Explicit admin routes
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html']

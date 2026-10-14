@@ -336,6 +336,8 @@
   dialog.addEventListener('click', e => { if (e.target === dialog) closeDialog(); });
 
   window.addEventListener('hashchange', checkHashJob);
+  checkHashJob();
+
   $('#year').textContent = new Date().getFullYear();
 })();
 
